@@ -1,7 +1,8 @@
-require_relative '../brick.rb'
+require 'image'
+require 'brick'
 
 RSpec.describe Brick do
-  let(:brick) { Brick.new(value: 300, position: [100,100]) }
+  let(:brick) { Brick.new(file: 'image.png', value: 300, position: [100,100]) }
 
   describe '.initialize' do
     it 'is valid with the correct parameters' do
