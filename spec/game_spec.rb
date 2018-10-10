@@ -26,6 +26,10 @@ RSpec.describe Game do
       it 'has a background image' do
         expect(game.instance_variable_get(:@background)).to be_an_instance_of(Gosu::Image)
       end
+
+      it 'has the game state set to `ball in paddle`' do
+        expect(game.instance_variable_get(:@game_state)).to eq(:ball_in_paddle)
+      end
     end
   end
 end

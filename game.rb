@@ -6,24 +6,39 @@ require_relative 'lib/bricks'
 require_relative 'lib/paddle'
 require_relative 'lib/ball'
 
-
 class Game < Gosu::Window
+  PADDLE_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
+  PADDLE_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT
+  BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::REGULAR_BALL_AREA / 2)
+  BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Settings::REGULAR_BALL_AREA
+
   def initialize
     super(Settings::SCREEN_WIDTH, Settings::SCREEN_HEIGHT)
     self.caption = 'Brick Breaker'
     load_graphics
+    @game_state = :ball_in_paddle
   end
 
   def update
-    @paddle.move_left if Gosu.button_down?(Gosu::KB_LEFT)
-    @paddle.move_right if Gosu.button_down?(Gosu::KB_RIGHT)
+    if Gosu.button_down?(Gosu::KB_LEFT)
+      @paddle.move_left
+      @ball.move_left if @game_state == :ball_in_paddle
+    elsif Gosu.button_down?(Gosu::KB_RIGHT)
+      @paddle.move_right
+      @ball.move_right if @game_state == :ball_in_paddle
+    elsif Gosu.button_down?(Gosu::KB_SPACE)
+      if @game_state == :ball_in_paddle
+        @ball.lift_off
+        @game_state = :playing
+      end
+    end
+
+    ball_movements
   end
 
   def draw
     @background.draw(0, 0, 0)
-    @bricks.each do |brick|
-      brick.image.draw(brick.position.first, brick.position.last, 0)
-    end
+    @bricks.each { |brick| brick.image.draw(brick.position.first, brick.position.last, 0) }
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
     @ball.image.draw(@ball.position.first, @ball.position.last, 0)
   end
@@ -58,15 +73,13 @@ class Game < Gosu::Window
   end
 
   def load_paddle
-    x = (Settings::SCREEN_WIDTH / 2) - (Settings::BRICK_WIDTH / 2)
-    y = Settings::SCREEN_HEIGHT - Settings::BRICK_HEIGHT
-    @paddle = Paddle.new(file: 'assets/paddle_simple.png', position: [x, y])
+    @paddle = Paddle.new(file: 'assets/paddle_simple.png', position: [PADDLE_X_START, PADDLE_Y_START])
+    @paddle.position
   end
 
   def load_ball
-    x = (Settings::SCREEN_WIDTH / 2) - (16 / 2)
-    y = Settings::SCREEN_HEIGHT - Settings::BRICK_HEIGHT - 16
-    @ball = Ball.new(file: 'assets/ball_regular.png', position: [x, y])
+    @ball = Ball.new(file: 'assets/ball_regular.png', position: [BALL_X_START, BALL_Y_START])
+    @ball.position
   end
 
   def position_bricks(x:, y:)
@@ -79,6 +92,28 @@ class Game < Gosu::Window
       end
       brick.position = [x, y]
     end
+  end
+
+  def ball_movements
+    @ball.move if @game_state == :playing
+    @ball.bounce_off if @game_state == :playing
+    ball_lost
+    end
+
+  def ball_lost
+    return unless @ball.lost?
+
+    @game_state = :ball_in_paddle
+    reset_paddle
+    reset_ball
+    end
+
+  def reset_paddle
+    @paddle.position = [PADDLE_X_START, PADDLE_Y_START]
+  end
+
+  def reset_ball
+    @ball.position = [BALL_X_START, BALL_Y_START]
   end
 end
 
