@@ -1,8 +1,11 @@
 The game has four states
 
 Ball in paddle: When the game starts or when we lose the ball
+
 Playing: When we press SPACE to launch the ball
+
 Game over: When we lose all of our lives
+
 Won: When we destroy all the bricks
 
 Sequence of Events
