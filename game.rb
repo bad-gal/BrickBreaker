@@ -9,8 +9,8 @@ require_relative 'lib/ball'
 class Game < Gosu::Window
   PADDLE_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
   PADDLE_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT
-  BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::REGULAR_BALL_AREA / 2)
-  BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Settings::REGULAR_BALL_AREA
+  BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
+  BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
 
   def initialize
     super(Settings::SCREEN_WIDTH, Settings::SCREEN_HEIGHT)
@@ -18,6 +18,7 @@ class Game < Gosu::Window
     load_graphics
     @game_state = :ball_in_paddle
     @score = 0
+    @lives = 3
     @font = Gosu::Font.new(20)
   end
 
@@ -25,6 +26,7 @@ class Game < Gosu::Window
     button_pressed
     ball_movements
     collisions
+    @game_state = :won if won?
   end
 
   def draw
@@ -33,6 +35,7 @@ class Game < Gosu::Window
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
     @ball.image.draw(@ball.position.first, @ball.position.last, 0)
     @font.draw("Score: #{@score.to_s}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw("Lives: #{@lives.to_s}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
   end
 
   def button_down(id)
@@ -95,10 +98,13 @@ class Game < Gosu::Window
   def ball_lost
     return unless @ball.lost?
 
+    @lives -= 1 if @lives.positive?
+    return @game_state = :game_over if @lives.zero?
+
     @game_state = :ball_in_paddle
     reset_paddle
     reset_ball
-    end
+  end
 
   def reset_paddle
     @paddle.position = [PADDLE_X_START, PADDLE_Y_START]
@@ -109,22 +115,33 @@ class Game < Gosu::Window
   end
 
   def collisions
+    brick_collision
+    paddle_collision
+  end
+
+  def brick_collision
     @bricks.each do |brick|
-      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH,
-                                       Settings::BRICK_HEIGHT)
+      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)
 
       @ball.bounce_off
       destroy_brick(brick)
     end
-
-    @ball.bounce_off if @ball.collides_with?(@paddle.position,
-                                             Settings::PADDLE_WIDTH,
-                                             Settings::PADDLE_HEIGHT)
   end
 
   def destroy_brick(brick)
     @score += brick.value
     @bricks.delete brick
+  end
+
+  def paddle_collision
+    return unless @ball.collides_with?(@paddle.position, Settings::PADDLE_WIDTH, Settings::PADDLE_HEIGHT)
+
+    @ball.reposition_to(@paddle.position[1], Settings::PADDLE_HEIGHT)
+    @ball.bounce_off
+  end
+
+  def won?
+    @bricks.size.zero?
   end
 
   def button_pressed

@@ -1,6 +1,7 @@
 Created in Ruby using GOSU library
 
 The Idea
+
 There are rows of bricks at the top of the screen. The aim of the game is to 
 destroy all the bricks with a small ball that travels up and down the screen. 
 A brick is destroyed when hit by the ball. The ball bounces off when it

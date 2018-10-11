@@ -62,7 +62,7 @@ RSpec.describe Ball do
     context 'ball vertical position is more than 0' do
       it 'moves the ball upwards' do
         ball.lift_off
-        expect(ball.velocity).to eq([Settings::PADDLE_MOVE, -Settings::PADDLE_MOVE])
+        expect(ball.velocity).to eq([Settings::BALL_MOVE, -Settings::BALL_MOVE])
       end
     end
   end
@@ -72,31 +72,31 @@ RSpec.describe Ball do
       context 'at the top of the screen' do
         before do
           ball.position[1] = 0
-          ball.velocity[1] = -Settings::PADDLE_MOVE
+          ball.velocity[1] = -Settings::BALL_MOVE
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[1]).to eq(Settings::PADDLE_MOVE)
+          expect(ball.velocity[1]).to eq(Settings::BALL_MOVE)
         end
       end
       context 'at the left of the screen' do
         before do
           ball.position[0] = 0
-          ball.velocity[0] = -Settings::PADDLE_MOVE
+          ball.velocity[0] = -Settings::BALL_MOVE
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[0]).to eq(Settings::PADDLE_MOVE)
+          expect(ball.velocity[0]).to eq(Settings::BALL_MOVE)
         end
       end
       context 'at the right of the screen' do
         before do
           ball.position[0] = 635
-          ball.velocity[0] = Settings::PADDLE_MOVE
+          ball.velocity[0] = Settings::BALL_MOVE
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[0]).to eq(-Settings::PADDLE_MOVE)
+          expect(ball.velocity[0]).to eq(-Settings::BALL_MOVE)
         end
       end
     end
@@ -104,9 +104,9 @@ RSpec.describe Ball do
 
   describe '.bounce_off' do
     context 'with vertical direction of travel' do
-      let(:direction) { [Settings::PADDLE_MOVE, Settings::PADDLE_MOVE] }
+      let(:direction) { [Settings::BALL_MOVE, Settings::BALL_MOVE] }
       before do
-        ball.velocity = [Settings::PADDLE_MOVE, -Settings::PADDLE_MOVE]
+        ball.velocity = [Settings::BALL_MOVE, -Settings::BALL_MOVE]
         ball.bounce_off
       end
       it 'changes direction' do
@@ -115,10 +115,17 @@ RSpec.describe Ball do
     end
   end
 
+  describe '.reposition_to' do
+    it 'changes the position of the ball' do
+      ball.reposition_to(460, 20)
+      expect(ball.position[1]).to eq(441)
+    end
+  end
+
   describe '.lost' do
     context 'when ball has not been caught by paddle' do
       before do
-        ball.position = [56, 490]
+        ball.position = [56, 500]
       end
       it 'returns true that ball is lost' do
         expect(ball.lost?).to eq(true)
