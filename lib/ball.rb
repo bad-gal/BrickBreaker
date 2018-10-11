@@ -47,7 +47,7 @@ class Ball
   end
 
   def lost?
-    @position[1] > Settings::SCREEN_HEIGHT
+    @position[1] > Settings::SCREEN_HEIGHT + Settings::REGULAR_BALL_AREA
   end
 
   def collides_with?(pos, width, height)

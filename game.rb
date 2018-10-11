@@ -17,34 +17,14 @@ class Game < Gosu::Window
     self.caption = 'Brick Breaker'
     load_graphics
     @game_state = :ball_in_paddle
+    @score = 0
+    @font = Gosu::Font.new(20)
   end
 
   def update
-    if Gosu.button_down?(Gosu::KB_LEFT)
-      @paddle.move_left
-      @ball.move_left if @game_state == :ball_in_paddle
-    elsif Gosu.button_down?(Gosu::KB_RIGHT)
-      @paddle.move_right
-      @ball.move_right if @game_state == :ball_in_paddle
-    elsif Gosu.button_down?(Gosu::KB_SPACE)
-      if @game_state == :ball_in_paddle
-        @ball.lift_off
-        @game_state = :playing
-      end
-    end
-
+    button_pressed
     ball_movements
-
-    @bricks.each do |brick|
-      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH,
-                                       Settings::BRICK_HEIGHT)
-
-      @ball.bounce_off
-    end
-
-    @ball.bounce_off if @ball.collides_with?(@paddle.position,
-                                                    Settings::PADDLE_WIDTH,
-                                                    Settings::PADDLE_HEIGHT)
+    collisions
   end
 
   def draw
@@ -52,6 +32,7 @@ class Game < Gosu::Window
     @bricks.each { |brick| brick.image.draw(brick.position.first, brick.position.last, 0) }
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
     @ball.image.draw(@ball.position.first, @ball.position.last, 0)
+    @font.draw("Score: #{@score.to_s}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
   end
 
   def button_down(id)
@@ -125,6 +106,40 @@ class Game < Gosu::Window
 
   def reset_ball
     @ball.position = [BALL_X_START, BALL_Y_START]
+  end
+
+  def collisions
+    @bricks.each do |brick|
+      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH,
+                                       Settings::BRICK_HEIGHT)
+
+      @ball.bounce_off
+      destroy_brick(brick)
+    end
+
+    @ball.bounce_off if @ball.collides_with?(@paddle.position,
+                                             Settings::PADDLE_WIDTH,
+                                             Settings::PADDLE_HEIGHT)
+  end
+
+  def destroy_brick(brick)
+    @score += brick.value
+    @bricks.delete brick
+  end
+
+  def button_pressed
+    if Gosu.button_down?(Gosu::KB_LEFT)
+      @paddle.move_left
+      @ball.move_left if @game_state == :ball_in_paddle
+    elsif Gosu.button_down?(Gosu::KB_RIGHT)
+      @paddle.move_right
+      @ball.move_right if @game_state == :ball_in_paddle
+    elsif Gosu.button_down?(Gosu::KB_SPACE)
+      if @game_state == :ball_in_paddle
+        @ball.lift_off
+        @game_state = :playing
+      end
+    end
   end
 end
 
