@@ -34,6 +34,17 @@ class Game < Gosu::Window
     end
 
     ball_movements
+
+    @bricks.each do |brick|
+      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH,
+                                       Settings::BRICK_HEIGHT)
+
+      @ball.bounce_off
+    end
+
+    @ball.bounce_off if @ball.collides_with?(@paddle.position,
+                                                    Settings::PADDLE_WIDTH,
+                                                    Settings::PADDLE_HEIGHT)
   end
 
   def draw
@@ -96,7 +107,7 @@ class Game < Gosu::Window
 
   def ball_movements
     @ball.move if @game_state == :playing
-    @ball.bounce_off if @game_state == :playing
+    @ball.boundary_bounce if @game_state == :playing
     ball_lost
     end
 

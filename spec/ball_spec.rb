@@ -46,16 +46,28 @@ RSpec.describe Ball do
     end
   end
 
+  describe '.move' do
+    let(:old_position) { [350, 400] }
+    before do
+      ball.velocity = [-5, -5]
+    end
+    it 'moves the ball' do
+      expect(ball.position).to eq(old_position)
+      ball.move
+      expect(ball.position).to_not eq(old_position)
+    end
+  end
+
   describe '.lift_off' do
     context 'ball vertical position is more than 0' do
       it 'moves the ball upwards' do
         ball.lift_off
-        expect(ball.velocity).to eq([0, -Settings::PADDLE_MOVE])
+        expect(ball.velocity).to eq([Settings::PADDLE_MOVE, -Settings::PADDLE_MOVE])
       end
     end
   end
 
-  describe '.bounce_off' do
+  describe '.boundary_bounce' do
     context 'when ball collides with the boundary' do
       context 'at the top of the screen' do
         before do
@@ -63,7 +75,7 @@ RSpec.describe Ball do
           ball.velocity[1] = -Settings::PADDLE_MOVE
         end
         it 'changes its velocity' do
-          ball.bounce_off
+          ball.boundary_bounce
           expect(ball.velocity[1]).to eq(Settings::PADDLE_MOVE)
         end
       end
@@ -73,7 +85,7 @@ RSpec.describe Ball do
           ball.velocity[0] = -Settings::PADDLE_MOVE
         end
         it 'changes its velocity' do
-          ball.bounce_off
+          ball.boundary_bounce
           expect(ball.velocity[0]).to eq(Settings::PADDLE_MOVE)
         end
       end
@@ -83,9 +95,22 @@ RSpec.describe Ball do
           ball.velocity[0] = Settings::PADDLE_MOVE
         end
         it 'changes its velocity' do
-          ball.bounce_off
+          ball.boundary_bounce
           expect(ball.velocity[0]).to eq(-Settings::PADDLE_MOVE)
         end
+      end
+    end
+  end
+
+  describe '.bounce_off' do
+    context 'with vertical direction of travel' do
+      let(:direction) { [Settings::PADDLE_MOVE, Settings::PADDLE_MOVE] }
+      before do
+        ball.velocity = [Settings::PADDLE_MOVE, -Settings::PADDLE_MOVE]
+        ball.bounce_off
+      end
+      it 'changes direction' do
+        expect(ball.velocity).to eq(direction)
       end
     end
   end
@@ -97,6 +122,35 @@ RSpec.describe Ball do
       end
       it 'returns true that ball is lost' do
         expect(ball.lost?).to eq(true)
+      end
+    end
+  end
+
+  describe '.collides_with?' do
+    before do
+      ball.position = [130, 108]
+    end
+    context 'when a collision occurs' do
+      context 'when object is above the ball' do
+        let(:brick) { Brick.new(file: 'image.png', value: 300, position: [100, 100]) }
+        it 'returns true' do
+          expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(true)
+        end
+      end
+      context 'when object is below the ball' do
+        let(:brick) { Brick.new(file: 'image.png', value: 300, position: [100, 400]) }
+        before do
+          ball.position = [130, 395]
+        end
+        it 'returns true' do
+          expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(true)
+        end
+      end
+    end
+    context 'when there is no collision' do
+      let(:brick) { Brick.new(file: 'image.png', value: 300, position: [300, 300]) }
+      it 'returns fails' do
+        expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(false )
       end
     end
   end
