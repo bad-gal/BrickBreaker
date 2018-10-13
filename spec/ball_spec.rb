@@ -3,6 +3,7 @@ require 'ball'
 
 RSpec.describe Ball do
   let(:ball) { Ball.new(file: 'image.png', position: [350, 400]) }
+  let(:ball_speed) { 5 }
 
   describe '.initialize' do
     it 'is valid with the correct parameters' do
@@ -49,7 +50,7 @@ RSpec.describe Ball do
   describe '.move' do
     let(:old_position) { [350, 400] }
     before do
-      ball.velocity = [-5, -5]
+      ball.velocity = [-ball_speed, -ball_speed]
     end
     it 'moves the ball' do
       expect(ball.position).to eq(old_position)
@@ -62,7 +63,7 @@ RSpec.describe Ball do
     context 'ball vertical position is more than 0' do
       it 'moves the ball upwards' do
         ball.lift_off
-        expect(ball.velocity).to eq([Settings::BALL_MOVE, -Settings::BALL_MOVE])
+        expect(ball.velocity).to eq([ball_speed, -ball_speed])
       end
     end
   end
@@ -72,31 +73,31 @@ RSpec.describe Ball do
       context 'at the top of the screen' do
         before do
           ball.position[1] = 0
-          ball.velocity[1] = -Settings::BALL_MOVE
+          ball.velocity[1] = -ball_speed
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[1]).to eq(Settings::BALL_MOVE)
+          expect(ball.velocity[1]).to eq(ball_speed)
         end
       end
       context 'at the left of the screen' do
         before do
           ball.position[0] = 0
-          ball.velocity[0] = -Settings::BALL_MOVE
+          ball.velocity[0] = -ball_speed
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[0]).to eq(Settings::BALL_MOVE)
+          expect(ball.velocity[0]).to eq(ball_speed)
         end
       end
       context 'at the right of the screen' do
         before do
           ball.position[0] = 635
-          ball.velocity[0] = Settings::BALL_MOVE
+          ball.velocity[0] = ball_speed
         end
         it 'changes its velocity' do
           ball.boundary_bounce
-          expect(ball.velocity[0]).to eq(-Settings::BALL_MOVE)
+          expect(ball.velocity[0]).to eq(-ball_speed)
         end
       end
     end
@@ -104,9 +105,9 @@ RSpec.describe Ball do
 
   describe '.bounce_off' do
     context 'with vertical direction of travel' do
-      let(:direction) { [Settings::BALL_MOVE, Settings::BALL_MOVE] }
+      let(:direction) { [ball_speed, ball_speed] }
       before do
-        ball.velocity = [Settings::BALL_MOVE, -Settings::BALL_MOVE]
+        ball.velocity = [ball_speed, -ball_speed]
         ball.bounce_off
       end
       it 'changes direction' do
@@ -158,6 +159,17 @@ RSpec.describe Ball do
       let(:brick) { Brick.new(file: 'image.png', value: 300, position: [300, 300]) }
       it 'returns fails' do
         expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(false )
+      end
+    end
+  end
+
+  describe '.change_size' do
+    context 'when changing image' do
+      before do
+        ball.change('image.png', 6)
+      end
+      it 'changes to a small ball' do
+        expect(ball.area).to eq(6)
       end
     end
   end

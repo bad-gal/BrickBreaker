@@ -9,8 +9,10 @@ require_relative 'lib/ball'
 class Game < Gosu::Window
   PADDLE_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
   PADDLE_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT
-  BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
-  BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
+  MEDIUM_BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
+  MEDIUM_BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
+  SMALL_BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::SMALL_BALL_AREA / 2)
+  SMALL_BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::SMALL_BALL_AREA
 
   def initialize
     super(Settings::SCREEN_WIDTH, Settings::SCREEN_HEIGHT)
@@ -33,7 +35,7 @@ class Game < Gosu::Window
     @background.draw(0, 0, 0)
     @bricks.each { |brick| brick.image.draw(brick.position.first, brick.position.last, 0) }
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
-    @ball.image.draw(@ball.position.first, @ball.position.last, 0)
+    @balls.each { |ball| ball.image.draw(ball.position.first, ball.position.last, 0) }
     @font.draw("Score: #{@score.to_s}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
     @font.draw("Lives: #{@lives.to_s}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
   end
@@ -69,12 +71,11 @@ class Game < Gosu::Window
 
   def load_paddle
     @paddle = Paddle.new(file: 'assets/paddle_simple.png', position: [PADDLE_X_START, PADDLE_Y_START])
-    @paddle.position
   end
 
   def load_ball
-    @ball = Ball.new(file: 'assets/ball_regular.png', position: [BALL_X_START, BALL_Y_START])
-    @ball.position
+    @balls = []
+    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
   end
 
   def position_bricks(x:, y:)
@@ -90,20 +91,26 @@ class Game < Gosu::Window
   end
 
   def ball_movements
-    @ball.move if @game_state == :playing
-    @ball.boundary_bounce if @game_state == :playing
+    @balls.each(&:move) if @game_state == :playing
+    @balls.each(&:boundary_bounce) if @game_state == :playing
     ball_lost
     end
 
   def ball_lost
-    return unless @ball.lost?
+    if @balls.size == 1
+      if @balls.first.lost?
+        @lives -= 1 if @lives.positive?
+        return @game_state = :game_over if @lives.zero?
 
-    @lives -= 1 if @lives.positive?
-    return @game_state = :game_over if @lives.zero?
-
-    @game_state = :ball_in_paddle
-    reset_paddle
-    reset_ball
+        @game_state = :ball_in_paddle
+        reset_paddle
+        reset_ball
+      end
+    else
+      @balls.each do |ball|
+        @balls.delete ball if ball.lost?
+      end
+    end
   end
 
   def reset_paddle
@@ -111,20 +118,26 @@ class Game < Gosu::Window
   end
 
   def reset_ball
-    @ball.position = [BALL_X_START, BALL_Y_START]
+    if @balls.first.area == 16
+      @balls.first.position = [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START]
+    elsif @balls.first.area == 8
+      @balls.first.position = [SMALL_BALL_X_START, SMALL_BALL_Y_START]
+    end
   end
 
   def collisions
     brick_collision
-    paddle_collision
+    paddle_collision if @game_state != :ball_in_paddle
   end
 
   def brick_collision
     @bricks.each do |brick|
-      next unless @ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)
+      @balls.each do |ball|
+        next unless ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)
 
-      @ball.bounce_off
-      destroy_brick(brick)
+        ball.bounce_off
+        destroy_brick(brick)
+      end
     end
   end
 
@@ -134,10 +147,12 @@ class Game < Gosu::Window
   end
 
   def paddle_collision
-    return unless @ball.collides_with?(@paddle.position, Settings::PADDLE_WIDTH, Settings::PADDLE_HEIGHT)
+    @balls.each do |ball|
+      next unless ball.collides_with?(@paddle.position, Settings::PADDLE_WIDTH, Settings::PADDLE_HEIGHT)
 
-    @ball.reposition_to(@paddle.position[1], Settings::PADDLE_HEIGHT)
-    @ball.bounce_off
+      ball.reposition_to(@paddle.position[1], Settings::PADDLE_HEIGHT)
+      ball.bounce_off
+    end
   end
 
   def won?
@@ -147,13 +162,13 @@ class Game < Gosu::Window
   def button_pressed
     if Gosu.button_down?(Gosu::KB_LEFT)
       @paddle.move_left
-      @ball.move_left if @game_state == :ball_in_paddle
+      @balls.each(&:move_left) if @game_state == :ball_in_paddle
     elsif Gosu.button_down?(Gosu::KB_RIGHT)
       @paddle.move_right
-      @ball.move_right if @game_state == :ball_in_paddle
+      @balls.each(&:move_right) if @game_state == :ball_in_paddle
     elsif Gosu.button_down?(Gosu::KB_SPACE)
       if @game_state == :ball_in_paddle
-        @ball.lift_off
+        @balls.each(&:lift_off)
         @game_state = :playing
       end
     end
