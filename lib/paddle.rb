@@ -2,12 +2,18 @@ require_relative 'settings'
 
 class Paddle
   include Image
-  attr_accessor :position
+  attr_accessor :position, :width, :height
   attr_reader :image
 
-  def initialize(file:, position:)
+  SMALL_PADDLE = { file: 'assets/paddle_small.png', pixel_size: 61 }.freeze
+  REGULAR_PADDLE = { file: 'assets/paddle_simple.png', pixel_size: 80 }.freeze
+  LONG_PADDLE = { file: 'assets/paddle_large.png', pixel_size: 100 }.freeze
+
+  def initialize(position = [0, 0], details:)
     @position = position
-    @image = Image.create(file: file)
+    @image = Image.create(file: details[:file])
+    @width = details[:pixel_size]
+    @height = 16
   end
 
   def draw
@@ -25,5 +31,10 @@ class Paddle
         Settings::PADDLE_WIDTH)
 
     @position[0] += Settings::PADDLE_MOVE
+  end
+
+  def change(details:)
+    @image = Image.create(file: details[:file])
+    @width = details[:pixel_size]
   end
 end

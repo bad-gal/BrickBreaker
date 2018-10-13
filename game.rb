@@ -70,7 +70,8 @@ class Game < Gosu::Window
   end
 
   def load_paddle
-    @paddle = Paddle.new(file: 'assets/paddle_simple.png', position: [PADDLE_X_START, PADDLE_Y_START])
+    @paddle = Paddle.new(details: Paddle::REGULAR_PADDLE)
+    position_paddle
   end
 
   def load_ball
@@ -94,7 +95,7 @@ class Game < Gosu::Window
     @balls.each(&:move) if @game_state == :playing
     @balls.each(&:boundary_bounce) if @game_state == :playing
     ball_lost
-    end
+  end
 
   def ball_lost
     if @balls.size == 1
@@ -103,7 +104,7 @@ class Game < Gosu::Window
         return @game_state = :game_over if @lives.zero?
 
         @game_state = :ball_in_paddle
-        reset_paddle
+        position_paddle
         reset_ball
       end
     else
@@ -113,8 +114,10 @@ class Game < Gosu::Window
     end
   end
 
-  def reset_paddle
-    @paddle.position = [PADDLE_X_START, PADDLE_Y_START]
+  def position_paddle
+    x = (Settings::SCREEN_WIDTH / 2) - (@paddle.width / 2)
+    y = Settings::SCREEN_HEIGHT - @paddle.height
+    @paddle.position = [x, y]
   end
 
   def reset_ball
