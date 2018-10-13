@@ -1,16 +1,17 @@
 class Ball
   include Image
-  attr_accessor :position, :velocity
-  attr_reader :image
+  attr_accessor :position, :velocity, :speed, :image, :area
 
   REGULAR_BALL_AREA = 16
+  SMALL_BALL_AREA = 8
 
-  def initialize(file:, position:)
+  def initialize(speed = 5, file:, position:)
     @position = position
     @velocity = [0, 0]
     @image = Image.create(file: file)
     @area = REGULAR_BALL_AREA
     @centre_on_paddle = (Settings::PADDLE_WIDTH - @area) / 2
+    @speed = speed
   end
 
   def draw
@@ -36,8 +37,8 @@ class Ball
   end
 
   def lift_off
-    @velocity[1] = -Settings::BALL_MOVE
-    @velocity[0] = Settings::BALL_MOVE
+    @velocity[1] = -@speed
+    @velocity[0] = @speed
   end
 
   def boundary_bounce
@@ -66,5 +67,10 @@ class Ball
       @position[0] >= pos[0] && @position[0] <= pos[0] + width &&
         @position[1] >= (pos[1] - height) && @position[1] <= pos[1]
     end
+  end
+
+  def change(file, pixel_size)
+    @image = Image.create(file: file)
+    @area = pixel_size
   end
 end

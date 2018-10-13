@@ -20,7 +20,8 @@ RSpec.describe Game do
       end
 
       it 'has an instance of a Ball object' do
-        expect(game.instance_variable_get(:@ball)).to be_an_instance_of(Ball)
+        expect(game.instance_variable_get(:@balls).first).to be_an_instance_of(Ball)
+        expect(game.instance_variable_get(:@balls)).to be_an_instance_of(Array)
       end
 
       it 'has a background image' do
