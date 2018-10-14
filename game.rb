@@ -2,9 +2,9 @@ require 'gosu'
 require_relative 'lib/settings'
 require_relative 'lib/image'
 require_relative 'lib/brick'
-require_relative 'lib/bricks'
 require_relative 'lib/paddle'
 require_relative 'lib/ball'
+require_relative 'lib/capsule'
 
 class Game < Gosu::Window
   PADDLE_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
@@ -22,6 +22,7 @@ class Game < Gosu::Window
     @score = 0
     @lives = 3
     @font = Gosu::Font.new(20)
+    @large_font = Gosu::Font.new(120)
   end
 
   def update
@@ -33,11 +34,20 @@ class Game < Gosu::Window
 
   def draw
     @background.draw(0, 0, 0)
-    @bricks.each { |brick| brick.image.draw(brick.position.first, brick.position.last, 0) }
+    @bricks.each do |brick|
+      brick.capsule.image.draw(brick.capsule.position.first, brick.capsule.position.last, 0)
+      brick.image.draw(brick.position.first, brick.position.last, 0)
+    end
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
     @balls.each { |ball| ball.image.draw(ball.position.first, ball.position.last, 0) }
-    @font.draw("Score: #{@score.to_s}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
-    @font.draw("Lives: #{@lives.to_s}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw("Score: #{@score}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw("Lives: #{@lives}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
+
+    if @game_state == :game_over
+      @large_font.draw('Game Over', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
+    elsif @game_state == :won
+      @large_font.draw('You won', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
+    end
   end
 
   def button_down(id)
@@ -54,19 +64,29 @@ class Game < Gosu::Window
     @background = Gosu::Image.new('assets/background.png')
     load_bricks
     load_paddle
-    load_ball
+    load_balls
   end
 
   def load_bricks
+    @bricks = []
+
     blue_bricks = { size: 8, file: 'assets/brick_blue.png', value: 600 }
     pink_bricks = { size: 16, file: 'assets/brick_pink.png', value: 500 }
     green_bricks = { size: 16, file: 'assets/brick_green.png', value: 400 }
     orange_bricks = { size: 16, file: 'assets/brick_orange.png', value: 300 }
     purple_bricks = { size: 16, file: 'assets/brick_purple.png', value: 200 }
     red_bricks = { size: 16, file: 'assets/brick_red.png', value: 100 }
-    @bricks = Bricks.new(blue_bricks, pink_bricks, green_bricks, orange_bricks,
-                         purple_bricks, red_bricks).pile
+
+    variants = [blue_bricks, pink_bricks, green_bricks, orange_bricks, purple_bricks, red_bricks]
+    variants.each do |var|
+      size = var[:size]
+      1.upto(size) do
+        @bricks << Brick.new(file: var[:file], value: var[:value], position: [0, 0])
+      end
+    end
+
     position_bricks(x: 0, y: -Settings::BRICK_HEIGHT)
+    attach_capsules
   end
 
   def load_paddle
@@ -74,7 +94,7 @@ class Game < Gosu::Window
     position_paddle
   end
 
-  def load_ball
+  def load_balls
     @balls = []
     @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
   end
@@ -88,6 +108,16 @@ class Game < Gosu::Window
         x += Settings::BRICK_WIDTH
       end
       brick.position = [x, y]
+      brick.capsule.position = [x, y]
+    end
+  end
+
+  def attach_capsules
+    sample = @bricks.sample(9)
+    sample.each_with_index do |brick, i|
+      x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
+      brick.capsule = Capsule.new(type: Capsule::CAPSULES[i],
+                                  position: [brick.position[0] + x_diff, brick.position[1]])
     end
   end
 
@@ -131,6 +161,7 @@ class Game < Gosu::Window
   def collisions
     brick_collision
     paddle_collision if @game_state != :ball_in_paddle
+    capsule_collision
   end
 
   def brick_collision
@@ -139,14 +170,14 @@ class Game < Gosu::Window
         next unless ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)
 
         ball.bounce_off
-        destroy_brick(brick)
+        cull_brick(brick)
       end
     end
   end
 
-  def destroy_brick(brick)
+  def cull_brick(brick)
     @score += brick.value
-    @bricks.delete brick
+    brick.destroy
   end
 
   def paddle_collision
@@ -155,6 +186,20 @@ class Game < Gosu::Window
 
       ball.reposition_to(@paddle.position[1], Settings::PADDLE_HEIGHT)
       ball.bounce_off
+    end
+  end
+
+  def capsule_collision
+    @bricks.each do |brick|
+      next unless brick.capsule.visible
+
+      brick.capsule.fall
+      if brick.capsule.collides_with?(@paddle.position, @paddle.width, @paddle.height)
+        collect_gift(brick.capsule.type)
+        @bricks.delete brick
+      elsif brick.capsule.position[1] > Settings::SCREEN_HEIGHT
+        @bricks.delete brick
+      end
     end
   end
 
@@ -175,6 +220,59 @@ class Game < Gosu::Window
         @game_state = :playing
       end
     end
+  end
+
+  def collect_gift(type)
+    method(type).call
+  end
+
+  def score_250
+    @score += 250
+  end
+
+  def score_100
+    @score += 100
+  end
+
+  def score_500
+    @score += 500
+  end
+
+  def small_paddle
+    @score += 75
+    @paddle.change(details: Paddle::SMALL_PADDLE)
+  end
+
+  def large_paddle
+    @score += 75
+    @paddle.change(details: Paddle::LONG_PADDLE)
+  end
+
+  def extra_life
+    @score += 75
+    @lives += 1 if @lives < 5
+  end
+
+  def slow_ball
+    @score += 75
+    @balls.each do |ball|
+      ball.velocity[0].positive? ? ball.velocity[0] -= 2 : ball.velocity[0] += 2
+      ball.velocity[0].positive? ? ball.velocity[1] -= 2 : ball.velocity[1] += 2
+    end
+  end
+
+  def fast_ball
+    @score += 75
+    @balls.each do |ball|
+      ball.velocity[0].positive? ? ball.velocity[0] += 3 : ball.velocity[0] -= 3
+      ball.velocity[0].positive? ? ball.velocity[1] += 3 : ball.velocity[1] -= 3
+    end
+  end
+
+  def multi
+    @score += 75
+    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
+    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
   end
 end
 

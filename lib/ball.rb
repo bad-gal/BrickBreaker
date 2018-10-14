@@ -5,7 +5,7 @@ class Ball
   REGULAR_BALL_AREA = 16
   SMALL_BALL_AREA = 8
 
-  def initialize(speed = 5, file:, position:)
+  def initialize(speed = 4, file:, position:)
     @position = position
     @velocity = [0, 0]
     @image = Image.create(file: file)
