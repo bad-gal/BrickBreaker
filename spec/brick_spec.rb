@@ -15,7 +15,7 @@ RSpec.describe Brick do
       brick.destroy
     end
     it 'sets the visible attribute to false' do
-      expect(brick).to have_attributes(visible: false, position: [-1, -1])
+      expect(brick).to have_attributes(visible: false, position: [-100, -100])
     end
   end
 

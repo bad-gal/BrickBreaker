@@ -2,7 +2,7 @@ require 'image'
 require 'capsule'
 
 RSpec.describe 'Capsule' do
-  let(:capsule) { Capsule.new(file: 'image.png', type: :extra_life, position: [310, 210]) }
+  let(:capsule) { Capsule.new(type: :score_250, position: [310, 210]) }
 
   describe '.initialize' do
     it 'is valid with the correct parameters' do
@@ -24,6 +24,27 @@ RSpec.describe 'Capsule' do
       end
       it 'returns fails' do
         expect(capsule.collides_with?(paddle.position, paddle.width, paddle.height)).to eq(false )
+      end
+    end
+  end
+
+  describe '.fall' do
+    context 'when capsule is set to fall' do
+      before do
+        capsule.visible = true
+        capsule.velocity[1] = 5
+        capsule.fall
+      end
+      it 'changes the position of the capsule' do
+        expect(capsule.position).to eq([310, 215])
+      end
+    end
+  end
+
+  describe '.acquire_filename' do
+    context 'determine the capsule filename given its type' do
+      it 'returns the filename assets/test' do
+        expect(capsule.acquire_filename(:extra_life)).to eq('assets/capsule_extra_life.png')
       end
     end
   end
