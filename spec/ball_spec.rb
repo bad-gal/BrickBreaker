@@ -3,7 +3,7 @@ require 'ball'
 
 RSpec.describe Ball do
   let(:ball) { Ball.new(file: 'image.png', position: [350, 400]) }
-  let(:ball_speed) { 5 }
+  let(:ball_speed) { 4 }
 
   describe '.initialize' do
     it 'is valid with the correct parameters' do
