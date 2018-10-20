@@ -136,6 +136,7 @@ class Game < Gosu::Window
         return @game_state = :game_over if @lives.zero?
 
         @game_state = :ball_in_paddle
+        reset_paddle
         position_paddle
         reset_ball
       end
@@ -158,6 +159,10 @@ class Game < Gosu::Window
     elsif @balls.first.area == 8
       @balls.first.position = [SMALL_BALL_X_START, SMALL_BALL_Y_START]
     end
+  end
+
+  def reset_paddle
+    @paddle.change(details: Paddle::REGULAR_PADDLE)
   end
 
   def collisions
@@ -197,6 +202,7 @@ class Game < Gosu::Window
 
       brick.capsule.fall
       if brick.capsule.collides_with?(@paddle.position, @paddle.width, @paddle.height)
+        brick.capsule.visible = false
         collect_gift(brick.capsule.type)
         @bricks.delete brick
       elsif brick.capsule.position[1] > Settings::SCREEN_HEIGHT
