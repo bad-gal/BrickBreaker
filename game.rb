@@ -71,12 +71,12 @@ class Game < Gosu::Window
   def load_bricks
     @bricks = []
 
-    blue_bricks = { size: 8, file: 'assets/brick_blue.png', value: 600 }
-    pink_bricks = { size: 16, file: 'assets/brick_pink.png', value: 500 }
-    green_bricks = { size: 16, file: 'assets/brick_green.png', value: 400 }
-    orange_bricks = { size: 16, file: 'assets/brick_orange.png', value: 300 }
-    purple_bricks = { size: 16, file: 'assets/brick_purple.png', value: 200 }
-    red_bricks = { size: 16, file: 'assets/brick_red.png', value: 100 }
+    blue_bricks = { size: 8, file: 'assets/brick_blue.png', value: 60 }
+    pink_bricks = { size: 16, file: 'assets/brick_pink.png', value: 50 }
+    green_bricks = { size: 16, file: 'assets/brick_green.png', value: 40 }
+    orange_bricks = { size: 16, file: 'assets/brick_orange.png', value: 30 }
+    purple_bricks = { size: 16, file: 'assets/brick_purple.png', value: 20 }
+    red_bricks = { size: 16, file: 'assets/brick_red.png', value: 10 }
 
     variants = [blue_bricks, pink_bricks, green_bricks, orange_bricks, purple_bricks, red_bricks]
     variants.each do |var|
