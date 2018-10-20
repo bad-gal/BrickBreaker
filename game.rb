@@ -22,6 +22,7 @@ class Game < Gosu::Window
     @score = 0
     @lives = 3
     @font = Gosu::Font.new(20)
+    @large_font = Gosu::Font.new(120)
   end
 
   def update
@@ -41,6 +42,13 @@ class Game < Gosu::Window
     @balls.each { |ball| ball.image.draw(ball.position.first, ball.position.last, 0) }
     @font.draw("Score: #{@score}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
     @font.draw("Lives: #{@lives}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
+
+    if @game_state == :game_over
+      @large_font.draw('Game Over', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
+    elsif @game_state == :won
+      @large_font.draw('You won', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
+    end
+
   end
 
   def button_down(id)
@@ -106,7 +114,8 @@ class Game < Gosu::Window
   end
 
   def attach_capsules
-    sample = @bricks.sample(8)
+    sample = @bricks.sample(9)
+
     sample.each_with_index do |brick, i|
       x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
       brick.capsule = Capsule.new(type: Capsule::CAPSULES[i],
@@ -232,18 +241,22 @@ class Game < Gosu::Window
   end
 
   def small_paddle
+    @score += 75
     @paddle.change(details: Paddle::SMALL_PADDLE)
   end
 
   def large_paddle
+    @score += 75
     @paddle.change(details: Paddle::LONG_PADDLE)
   end
 
   def extra_life
+    @score += 75
     @lives += 1 if @lives < 5
   end
 
   def slow_ball
+    @score += 75
     @balls.each do |ball|
       ball.velocity[0].positive? ? ball.velocity[0] -= 2 : ball.velocity[0] += 2
       ball.velocity[0].positive? ? ball.velocity[1] -= 2 : ball.velocity[1] += 2
@@ -251,10 +264,17 @@ class Game < Gosu::Window
   end
 
   def fast_ball
+    @score += 75
     @balls.each do |ball|
       ball.velocity[0].positive? ? ball.velocity[0] += 3 : ball.velocity[0] -= 3
       ball.velocity[0].positive? ? ball.velocity[1] += 3 : ball.velocity[1] -= 3
     end
+  end
+
+  def multi
+    @score += 75
+    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
+    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
   end
 end
 

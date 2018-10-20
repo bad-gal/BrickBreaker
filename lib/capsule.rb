@@ -6,7 +6,7 @@ class Capsule
 
   MOVE = 3
   CAPSULES = %i[extra_life small_paddle large_paddle fast_ball slow_ball
-                score_250 score_100 score_500 multi catch small_ball
+                score_250 score_100 score_500 multi catch
                 laser gun bomb wrap flip empty].freeze
 
   def initialize(type:, position:)
