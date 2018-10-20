@@ -48,6 +48,7 @@ class Game < Gosu::Window
     elsif @game_state == :won
       @large_font.draw('You won', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
     end
+
   end
 
   def button_down(id)
@@ -114,6 +115,7 @@ class Game < Gosu::Window
 
   def attach_capsules
     sample = @bricks.sample(9)
+
     sample.each_with_index do |brick, i|
       x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
       brick.capsule = Capsule.new(type: Capsule::CAPSULES[i],
