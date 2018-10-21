@@ -281,8 +281,21 @@ class Game < Gosu::Window
 
   def multi
     @score += 75
-    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
-    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
+
+    velocity = @balls.first.velocity
+    position = @balls.first.position
+    speed = @balls.first.speed
+
+    new_ball(position, [velocity[0], -velocity[1]], speed)
+    new_ball(position, [-velocity[0], velocity[1]], speed)
+    new_ball(position, [-velocity[0], -velocity[1]], speed)
+  end
+
+  def new_ball(position, velocity, speed)
+    ball = Ball.new(file: 'assets/ball_regular.png', position: [position[0], position[1]])
+    ball.velocity = velocity
+    ball.speed = speed
+    @balls << ball
   end
 end
 
