@@ -25,7 +25,7 @@ class Ball
   end
 
   def move_right
-    return if @position[0] > Settings::SCREEN_WIDTH - Settings::PADDLE_MOVE -
+    return if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
                              (Settings::PADDLE_WIDTH - @centre_on_paddle)
 
     @position[0] += Settings::PADDLE_MOVE
@@ -44,7 +44,7 @@ class Ball
   def boundary_bounce
     @velocity[1] = -@velocity[1] if @position[1] <= 0
     @velocity[0] = -@velocity[0] if @position[0] <= 0
-    @velocity[0] = -@velocity[0] if @position[0] + @area >= Settings::SCREEN_WIDTH
+    @velocity[0] = -@velocity[0] if @position[0] + @area >= Settings::GAME_WIDTH
   end
 
   def bounce_off
@@ -56,7 +56,7 @@ class Ball
   end
 
   def lost?
-    @position[1] > Settings::SCREEN_HEIGHT + @area
+    @position[1] > Settings::GAME_HEIGHT + @area
   end
 
   def collides_with?(pos, width, height)

@@ -27,7 +27,7 @@ class Paddle
   end
 
   def move_right
-    return if @position[0] > ((Settings::SCREEN_WIDTH - Settings::PADDLE_MOVE) -
+    return if @position[0] > ((Settings::GAME_WIDTH - Settings::PADDLE_MOVE) -
         Settings::PADDLE_WIDTH)
 
     @position[0] += Settings::PADDLE_MOVE

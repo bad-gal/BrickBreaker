@@ -7,21 +7,21 @@ require_relative 'lib/ball'
 require_relative 'lib/capsule'
 
 class Game < Gosu::Window
-  PADDLE_X_START = (Settings::SCREEN_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
-  PADDLE_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT
-  MEDIUM_BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
-  MEDIUM_BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
-  SMALL_BALL_X_START = (Settings::SCREEN_WIDTH / 2) - (Ball::SMALL_BALL_AREA / 2)
-  SMALL_BALL_Y_START = Settings::SCREEN_HEIGHT - Settings::PADDLE_HEIGHT - Ball::SMALL_BALL_AREA
+  PADDLE_X_START = (Settings::GAME_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
+  PADDLE_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT
+  MEDIUM_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
+  MEDIUM_BALL_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
+  SMALL_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::SMALL_BALL_AREA / 2)
+  SMALL_BALL_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT - Ball::SMALL_BALL_AREA
 
   def initialize
-    super(Settings::SCREEN_WIDTH, Settings::SCREEN_HEIGHT)
+    super(Settings::SCREEN_WIDTH, Settings::GAME_HEIGHT)
     self.caption = 'Brick Breaker'
     load_graphics
     @game_state = :ball_in_paddle
     @score = 0
     @lives = 3
-    @font = Gosu::Font.new(20)
+    @font = Gosu::Font.new(25)
     @large_font = Gosu::Font.new(120)
   end
 
@@ -35,14 +35,14 @@ class Game < Gosu::Window
 
   def draw
     @background.draw(0, 0, 0)
+    @border.draw(640, 0, 0)
     @bricks.each do |brick|
       brick.capsule.image.draw(brick.capsule.position.first, brick.capsule.position.last, 0)
       brick.image.draw(brick.position.first, brick.position.last, 0)
     end
     @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
     @balls.each { |ball| ball.image.draw(ball.position.first, ball.position.last, 0) }
-    @font.draw("Score: #{@score}", 20, 460, 0, 1, 1, Gosu::Color::WHITE)
-    @font.draw("Lives: #{@lives}", 520, 460, 0, 1, 1, Gosu::Color::WHITE)
+    draw_score_board
 
     if @game_state == :game_over
       @large_font.draw('Game Over', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
@@ -64,6 +64,7 @@ class Game < Gosu::Window
 
   def load_graphics
     @background = Gosu::Image.new('assets/background.png')
+    @border = Gosu::Image.new('assets/border.png')
     load_bricks
     load_paddle
     load_balls
@@ -124,6 +125,13 @@ class Game < Gosu::Window
     end
   end
 
+  def draw_score_board
+    @font.draw("Score", 675, 40, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw(@score, 700, 80, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw("Lives", 675, 160, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw(@lives, 700, 200, 0, 1, 1, Gosu::Color::WHITE)
+  end
+
   def ball_movements
     @balls.each(&:move) if @game_state == :playing
     @balls.each(&:boundary_bounce) if @game_state == :playing
@@ -149,8 +157,8 @@ class Game < Gosu::Window
   end
 
   def position_paddle
-    x = (Settings::SCREEN_WIDTH / 2) - (@paddle.width / 2)
-    y = Settings::SCREEN_HEIGHT - @paddle.height
+    x = (Settings::GAME_WIDTH / 2) - (@paddle.width / 2)
+    y = Settings::GAME_HEIGHT - @paddle.height
     @paddle.position = [x, y]
   end
 
@@ -207,7 +215,7 @@ class Game < Gosu::Window
         brick.capsule.visible = false
         collect_gift(brick.capsule.type)
         @bricks.delete brick
-      elsif brick.capsule.position[1] > Settings::SCREEN_HEIGHT
+      elsif brick.capsule.position[1] > Settings::GAME_HEIGHT
         @bricks.delete brick
       end
     end
