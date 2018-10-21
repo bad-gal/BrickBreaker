@@ -116,7 +116,7 @@ class Game < Gosu::Window
   end
 
   def attach_capsules
-    sample = @bricks.sample(9)
+    sample = @bricks.sample(10)
 
     sample.each_with_index do |brick, i|
       x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
@@ -168,10 +168,13 @@ class Game < Gosu::Window
     elsif @balls.first.area == 8
       @balls.first.position = [SMALL_BALL_X_START, SMALL_BALL_Y_START]
     end
+
+    @balls.first.wrap = false
   end
 
   def reset_paddle
     @paddle.change(details: Paddle::REGULAR_PADDLE)
+    @paddle.wrap = false
   end
 
   def collisions
@@ -304,6 +307,14 @@ class Game < Gosu::Window
     ball.velocity = velocity
     ball.speed = speed
     @balls << ball
+  end
+
+  def wrap
+    @score += 75
+    @paddle.wrap = true
+    @balls.each do |ball|
+      ball.wrap = true
+    end
   end
 end
 

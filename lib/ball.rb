@@ -1,6 +1,6 @@
 class Ball
   include Image
-  attr_accessor :position, :velocity, :speed, :image, :area
+  attr_accessor :position, :velocity, :speed, :image, :area, :wrap
 
   REGULAR_BALL_AREA = 16
   SMALL_BALL_AREA = 8
@@ -12,6 +12,7 @@ class Ball
     @area = REGULAR_BALL_AREA
     @centre_on_paddle = (Settings::PADDLE_WIDTH - @area) / 2
     @speed = speed
+    @wrap = false
   end
 
   def draw
@@ -19,16 +20,42 @@ class Ball
   end
 
   def move_left
-    return if @position[0] < @centre_on_paddle + Settings::PADDLE_MOVE
+    if @wrap
+      wrap_left
+    else
+      return if @position[0] < @centre_on_paddle + Settings::PADDLE_MOVE
 
-    @position[0] -= Settings::PADDLE_MOVE
+      @position[0] -= Settings::PADDLE_MOVE
+    end
   end
 
   def move_right
-    return if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
+    if @wrap
+      wrap_right
+    else
+      return if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
                              (Settings::PADDLE_WIDTH - @centre_on_paddle)
 
-    @position[0] += Settings::PADDLE_MOVE
+      @position[0] += Settings::PADDLE_MOVE
+    end
+  end
+
+  def wrap_left
+    if @position[0] < @centre_on_paddle + Settings::PADDLE_MOVE
+      @position[0] = Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
+          (Settings::PADDLE_WIDTH - @centre_on_paddle)
+    else
+      @position[0] -= Settings::PADDLE_MOVE
+    end
+  end
+
+  def wrap_right
+    if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
+        (Settings::PADDLE_WIDTH - @centre_on_paddle)
+      @position[0] = @centre_on_paddle + Settings::PADDLE_MOVE
+    else
+      @position[0] += Settings::PADDLE_MOVE
+    end
   end
 
   def move
