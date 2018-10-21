@@ -30,6 +30,7 @@ class Game < Gosu::Window
     ball_movements
     collisions
     @game_state = :won if won?
+    @game_state = :game_over if @lives.zero? && !won?
   end
 
   def draw
@@ -133,7 +134,7 @@ class Game < Gosu::Window
     if @balls.size == 1
       if @balls.first.lost?
         @lives -= 1 if @lives.positive?
-        return @game_state = :game_over if @lives.zero?
+        return if @lives.zero?
 
         @game_state = :ball_in_paddle
         reset_paddle
@@ -185,6 +186,7 @@ class Game < Gosu::Window
   def cull_brick(brick)
     @score += brick.value
     brick.destroy
+    @bricks.delete(brick) if brick.capsule.type == :empty
   end
 
   def paddle_collision
