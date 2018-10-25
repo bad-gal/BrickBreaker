@@ -7,11 +7,11 @@ class Ball
 
   def initialize(speed = 4, file:, position:)
     @position = position
+    @speed = speed
     @velocity = [0, 0]
     @image = Image.create(file: file)
     @area = REGULAR_BALL_AREA
-    @centre_on_paddle = (Settings::PADDLE_WIDTH - @area) / 2
-    @speed = speed
+    @centre_on_paddle = (Paddle::REGULAR_PADDLE[:pixel_size] - @area) / 2
     @wrap = false
   end
 
@@ -64,8 +64,8 @@ class Ball
   end
 
   def lift_off
-    @velocity[1] = -@speed
     @velocity[0] = @speed
+    @velocity[1] = -@speed
   end
 
   def boundary_bounce

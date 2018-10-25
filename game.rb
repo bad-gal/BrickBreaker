@@ -7,8 +7,6 @@ require_relative 'lib/ball'
 require_relative 'lib/capsule'
 
 class Game < Gosu::Window
-  PADDLE_X_START = (Settings::GAME_WIDTH / 2) - (Settings::PADDLE_WIDTH / 2)
-  PADDLE_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT
   MEDIUM_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
   MEDIUM_BALL_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
   SMALL_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::SMALL_BALL_AREA / 2)
@@ -23,6 +21,7 @@ class Game < Gosu::Window
     @lives = 3
     @font = Gosu::Font.new(25)
     @large_font = Gosu::Font.new(120)
+    @flip = false
   end
 
   def update
@@ -49,7 +48,6 @@ class Game < Gosu::Window
     elsif @game_state == :won
       @large_font.draw('You won', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
     end
-
   end
 
   def button_down(id)
@@ -116,7 +114,7 @@ class Game < Gosu::Window
   end
 
   def attach_capsules
-    sample = @bricks.sample(10)
+    sample = @bricks.sample(11)
 
     sample.each_with_index do |brick, i|
       x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
@@ -170,6 +168,7 @@ class Game < Gosu::Window
     end
 
     @balls.first.wrap = false
+    @flip = false
   end
 
   def reset_paddle
@@ -202,9 +201,9 @@ class Game < Gosu::Window
 
   def paddle_collision
     @balls.each do |ball|
-      next unless ball.collides_with?(@paddle.position, Settings::PADDLE_WIDTH, Settings::PADDLE_HEIGHT)
+      next unless ball.collides_with?(@paddle.position, @paddle.width, @paddle.height)
 
-      ball.reposition_to(@paddle.position[1], Settings::PADDLE_HEIGHT)
+      ball.reposition_to(@paddle.position[1], @paddle.height)
       ball.bounce_off
     end
   end
@@ -230,11 +229,21 @@ class Game < Gosu::Window
 
   def button_pressed
     if Gosu.button_down?(Gosu::KB_LEFT)
-      @paddle.move_left
-      @balls.each(&:move_left) if @game_state == :ball_in_paddle
+      if @flip
+        @paddle.move_right
+        @balls.each(&:move_right) if @game_state == :ball_in_paddle
+      else
+        @paddle.move_left
+        @balls.each(&:move_left) if @game_state == :ball_in_paddle
+      end
     elsif Gosu.button_down?(Gosu::KB_RIGHT)
-      @paddle.move_right
-      @balls.each(&:move_right) if @game_state == :ball_in_paddle
+      if @flip
+        @paddle.move_left
+        @balls.each(&:move_left) if @game_state == :ball_in_paddle
+      else
+        @paddle.move_right
+        @balls.each(&:move_right) if @game_state == :ball_in_paddle
+      end
     elsif Gosu.button_down?(Gosu::KB_SPACE)
       if @game_state == :ball_in_paddle
         @balls.each(&:lift_off)
@@ -315,6 +324,11 @@ class Game < Gosu::Window
     @balls.each do |ball|
       ball.wrap = true
     end
+  end
+
+  def flip
+    @score += 75
+    @flip = true
   end
 end
 
