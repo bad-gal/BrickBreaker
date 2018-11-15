@@ -8,4 +8,8 @@ module Settings
   PADDLE_MOVE = 5
   PADDLE_WIDTH = 80
   PADDLE_HEIGHT = 16
+
+  def self.overlapping?(left1, right1, left2, right2)
+    left2 <= right1 && left1 <= right2
+  end
 end
