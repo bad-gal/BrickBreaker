@@ -1,103 +1,104 @@
+require_relative 'state'
+
 class Ball
   include Image
-  attr_accessor :position, :velocity, :speed, :image, :area, :wrap
+  attr_reader :image, :size
+  attr_accessor :state, :velocity, :speed, :position
 
-  REGULAR_BALL_AREA = 16
-  SMALL_BALL_AREA = 8
+  REGULAR_BALL_AREA = { file: 'assets/ball_regular.png', size: 16 }.freeze
+  SMALL_BALL_AREA = { file: 'assets/ball_small.png', size: 8 }.freeze
+  BASIC_SPEED = 4
 
-  def initialize(speed = 4, file:, position:)
-    @position = position
+  def initialize(speed = BASIC_SPEED, ball_image = REGULAR_BALL_AREA, x:, y:)
+    @position = { x: x, y: y }
     @speed = speed
-    @velocity = [0, 0]
-    @image = Image.create(file: file)
-    @area = REGULAR_BALL_AREA
-    @centre_on_paddle = (Paddle::REGULAR_PADDLE[:pixel_size] - @area) / 2
-    @wrap = false
+    @velocity = { x: 0, y: 0 }
+    @image = Image.create(file: ball_image[:file])
+    @size = ball_image[:size]
+    @state = State::BALL_IN_PADDLE
+  end
+
+  def reset(pos_x:, pos_y:)
+    @position = { x: pos_x, y: pos_y }
+    @speed = BASIC_SPEED
+    @velocity = { x: 0, y: 0 }
+    @image = Image.create(file: REGULAR_BALL_AREA[:file])
+    @size = REGULAR_BALL_AREA[:size]
+    @state = State::BALL_IN_PADDLE
   end
 
   def draw
-    Image.draw(image: @image, position: @position, z: 0)
+    Image.draw(image: @image, position: @position)
   end
 
-  def move_left
-    if @wrap
-      wrap_left
-    else
-      return if @position[0] < @centre_on_paddle + Settings::PADDLE_MOVE
+  def move_left(centre_x:)
+    return unless @state == State::BALL_IN_PADDLE
 
-      @position[0] -= Settings::PADDLE_MOVE
-    end
+    return if @position[:x] < centre_x + Settings::PADDLE_MOVE
+
+    @position[:x] -= Settings::PADDLE_MOVE
   end
 
-  def move_right
-    if @wrap
-      wrap_right
-    else
-      return if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
-                             (Settings::PADDLE_WIDTH - @centre_on_paddle)
+  def move_right(width:, centre_x:)
+    return unless @state == State::BALL_IN_PADDLE
 
-      @position[0] += Settings::PADDLE_MOVE
-    end
-  end
+    return if @position[:x] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE - (width - centre_x)
 
-  def wrap_left
-    if @position[0] < @centre_on_paddle + Settings::PADDLE_MOVE
-      @position[0] = Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
-          (Settings::PADDLE_WIDTH - @centre_on_paddle)
-    else
-      @position[0] -= Settings::PADDLE_MOVE
-    end
-  end
-
-  def wrap_right
-    if @position[0] > Settings::GAME_WIDTH - Settings::PADDLE_MOVE -
-        (Settings::PADDLE_WIDTH - @centre_on_paddle)
-      @position[0] = @centre_on_paddle + Settings::PADDLE_MOVE
-    else
-      @position[0] += Settings::PADDLE_MOVE
-    end
+    @position[:x] += Settings::PADDLE_MOVE
   end
 
   def move
-    @position[0] += @velocity[0]
-    @position[1] += @velocity[1]
+    return unless state == State::PLAYING
+
+    @position[:x] += @velocity[:x]
+    @position[:y] += @velocity[:y]
   end
 
   def lift_off
-    @velocity[0] = @speed
-    @velocity[1] = -@speed
+    @velocity[:x] = @speed
+    @velocity[:y] = -@speed
   end
 
   def boundary_bounce
-    @velocity[1] = -@velocity[1] if @position[1] <= 0
-    @velocity[0] = -@velocity[0] if @position[0] <= 0
-    @velocity[0] = -@velocity[0] if @position[0] + @area >= Settings::GAME_WIDTH
-  end
+    return unless state == State::PLAYING
 
-  def bounce_off
-    @velocity[1] = -@velocity[1]
-  end
+    if @position[:y].negative?
+      @position[:y] = 0
+      @velocity[:y] = -@velocity[:y]
+    end
 
-  def reposition_to(y_position, height)
-    @position[1] = y_position - (height - 1)
-  end
+    if @position[:x] <= 0
+      @position[:x] = 0
+      @velocity[:x] = -@velocity[:x]
+    end
 
-  def lost?
-    @position[1] > Settings::GAME_HEIGHT + @area
-  end
-
-  def collides_with?(pos, width, height)
-    if pos[1] < @position[1]
-      @position[0] >= pos[0] && @position[0] <= pos[0] + width &&
-        @position[1] >= pos[1] && @position[1] <= pos[1] + height
-    else
-      @position[0] >= pos[0] && @position[0] <= pos[0] + width &&
-        @position[1] >= (pos[1] - height) && @position[1] <= pos[1]
+    if @position[:x] + @size >= Settings::GAME_WIDTH
+      @position[:x] = Settings::GAME_WIDTH - @size
+      @velocity[:x] = -@velocity[:x]
     end
   end
 
-  def change(file, pixel_size)
-    @image = Image.create(file: file)
-    @area = pixel_size
+  def bounce_off
+    @velocity[:y] = -@velocity[:y]
+  end
+
+  def reposition_to(y_position, height)
+    @position[:y] = y_position - (height - 1)
+  end
+
+  def lost?
+    @position[:y] > Settings::GAME_HEIGHT + @size
+  end
+
+  def collides_with?(pos, width, height)
+    return false unless state == State::PLAYING
+
+    Settings::overlapping?(pos[:x], pos[:x] + width, (@position[:x] + @velocity[:x]), (@position[:x] + @velocity[:x]) + @size) &&
+        Settings::overlapping?(pos[:y], pos[:y] + height, (@position[:y] + @velocity[:y]), (@position[:y] + @velocity[:y]) + @size)
+  end
+
+  def change(ball_image)
+    @image = Image.create(file: ball_image[:file])
+    @size = ball_image[:size]
   end
 end
