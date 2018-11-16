@@ -11,6 +11,13 @@ RSpec.describe Brick do
     end
   end
 
+  describe '.draw' do
+    it 'calls draw on the ball' do
+      expect(brick).to receive(:draw)
+      brick.draw
+    end
+  end
+
   describe '.damage' do
     context 'single hit brick' do
       before do
@@ -35,18 +42,37 @@ RSpec.describe Brick do
   end
 
   describe '.destroy' do
+    context 'when destroying a brick with no capsule' do
+      before do
+        brick.destroy
+      end
 
-    before do
-      brick.destroy
+      it 'sets the visible attribute to false' do
+        expect(brick.visible).to eq(false)
+      end
     end
 
-    it 'sets the visible attribute to false' do
-      expect(brick.visible).to eq(false)
+    context 'when destroying a brick with a capsule attached' do
+      let(:capsule_brick) { Brick.new(style:Brick::RED_BRICK, x: 100, y: 100, capsule: Capsule::CAPSULES[3]) }
+
+      before do
+        capsule_brick.destroy
+      end
+      it 'the capsule is not empty' do
+        expect(capsule_brick.capsule.type).to_not be(:empty)
+      end
+
+      it 'sets the capsule to visible' do
+        expect(capsule_brick.capsule.visible).to eq(true)
+      end
+
+      it 'set the capsule to be falling' do
+        expect(capsule_brick.capsule.velocity[:y]).to eq(Capsule::MOVE)
+      end
     end
   end
 
   describe '.destroyed_score' do
-
     context 'when brick has been destroyed' do
       before do
         brick.destroy

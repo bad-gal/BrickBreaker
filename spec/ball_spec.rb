@@ -42,6 +42,13 @@ RSpec.describe Ball do
     end
   end
 
+  describe '.draw' do
+    it 'calls draw on the ball' do
+      expect(ball).to receive(:draw)
+      ball.draw
+    end
+  end
+
   describe '.move_left' do
     context 'ball horizontal position is more than 5' do
       it 'moves the ball position left' do
@@ -177,13 +184,13 @@ RSpec.describe Ball do
     end
     context 'when a collision occurs' do
       context 'when object is above the ball' do
-        let(:brick) { Brick.new(file: 'image.png', value: 300, position: {x: 100, y: 100 }) }
+        let(:brick) { Brick.new(style: Brick::RED_BRICK, x: 100, y: 100) }
         it 'returns true' do
           expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(true)
         end
       end
       context 'when object is below the ball' do
-        let(:brick) { Brick.new(file: 'image.png', value: 300, position: { x: 100, y: 400 }) }
+        let(:brick) { Brick.new(style: Brick::RED_BRICK, x: 100, y: 400) }
         before do
           ball.position = { x: 130, y: 395 }
         end
@@ -193,7 +200,7 @@ RSpec.describe Ball do
       end
     end
     context 'when there is no collision' do
-      let(:brick) { Brick.new(file: 'image.png', value: 300, position: { x: 300, y: 300 }) }
+      let(:brick) { Brick.new(style: Brick::RED_BRICK, x: 300, y: 300) }
       it 'returns fails' do
         expect(ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)).to eq(false )
       end

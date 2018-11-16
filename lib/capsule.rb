@@ -1,8 +1,7 @@
 require 'byebug'
 class Capsule
   include Image
-  attr_accessor :position, :velocity, :visible
-  attr_reader :image, :type
+  attr_accessor :position, :velocity, :visible, :type, :image
 
   MOVE = 3
   CAPSULE_WIDTH = 60

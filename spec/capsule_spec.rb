@@ -21,6 +21,24 @@ RSpec.describe 'Capsule' do
         expect(capsule.position).to eq(x: 310, y: 215)
       end
     end
+
+    context 'when capsule type is empty' do
+      before do
+        capsule.type = :empty
+        capsule.velocity[:y] = 5
+        capsule.move
+      end
+      it 'does not move the capsule' do
+        expect(capsule.position).to eq(x: 310, y: 210)
+      end
+    end
+  end
+
+  describe '.draw' do
+    it 'calls draw on the ball' do
+      expect(capsule).to receive(:draw)
+      capsule.draw
+    end
   end
 
   describe '.acquire_filename' do

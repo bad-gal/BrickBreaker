@@ -30,13 +30,17 @@ class Brick
   end
 
   def damage
-    if @breakable
-      @hits -= 1
-      return if @hits.zero?
+    return unless @breakable
 
-      filename = 'assets/brick_' + @type.to_s + '_damage.png'
-      @image = Image.create(file: filename)
-    end
+    @hits -= 1
+    return if @hits.zero?
+
+    change_image
+  end
+
+  def change_image
+    filename = 'assets/brick_' + @type.to_s + '_damage.png'
+    @image = Image.create(file: filename)
   end
 
   def destroy
