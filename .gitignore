@@ -2,3 +2,5 @@
 .byebug_history
 .idea/
 IDEA.md
+coverage/
+TODO.md
