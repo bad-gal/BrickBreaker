@@ -1,7 +1,8 @@
+require 'byebug'
 class Brick
   include Image
-  attr_reader :value, :hits, :type, :image, :visible
-  attr_accessor :position, :capsule
+  attr_reader :value, :type, :image, :visible
+  attr_accessor :position, :capsule, :hits
 
   CEMENT_BRICK = { type: :cement, file: 'assets/brick_cement.png', value: 100, hits: 1, breakable: false }.freeze
   BLUE_BRICK = { type: :blue, file: 'assets/brick_blue.png', value: 20, hits: 3, breakable: true }.freeze
@@ -39,7 +40,7 @@ class Brick
   end
 
   def change_image
-    filename = 'assets/brick_' + @type.to_s + '_damage.png'
+    filename = 'assets/brick_' + @type.to_s + '_damage_' + @hits.to_s + '.png'
     @image = Image.create(file: filename)
   end
 

@@ -18,6 +18,18 @@ RSpec.describe Brick do
     end
   end
 
+  describe '.change_image' do
+    let(:blue) { Brick.new(style: Brick::BLUE_BRICK, x: 100, y: 100) }
+    context 'when Blue brick has been hit twice' do
+      before do
+        blue.hits = 1
+      end
+      it 'returns a Gosu::Image object' do
+        expect(blue.change_image).to be_kind_of(Gosu::Image)
+      end
+    end
+  end
+
   describe '.damage' do
     context 'single hit brick' do
       before do
@@ -32,10 +44,10 @@ RSpec.describe Brick do
     context 'multiple hit brick' do
       let(:multi_brick) { Brick.new(style: Brick::BLUE_BRICK, x: 100, y: 100) }
       before do
-        # multi_brick.damage
+        multi_brick.damage
       end
 
-      xit 'reduces hit value to 2' do
+      it 'reduces hit value to 2' do
         expect(multi_brick.hits).to eq(2)
       end
     end
