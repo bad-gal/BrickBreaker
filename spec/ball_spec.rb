@@ -3,6 +3,7 @@ require 'ball'
 require 'capsule'
 require 'brick'
 require 'settings'
+require 'paddle'
 
 RSpec.describe Ball do
   let(:ball) { Ball.new(x: 350, y: 400) }
@@ -214,6 +215,86 @@ RSpec.describe Ball do
       end
       it 'changes to a small ball' do
         expect(ball.size).to eq(8)
+      end
+    end
+  end
+
+  describe '.change_velocity_x' do
+    let(:paddle) { Paddle.new }
+
+    before do
+      paddle.position = { x: 100, y: 200 }
+    end
+
+    context 'when ball collides at <= 14% of paddle width' do
+      before do
+        ball.position = { x: 106, y: 200 }
+      end
+      it "changes ball's x velocity to -4" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(-4)
+      end
+    end
+
+    context 'when ball collides at between 15% and 24% of paddle width' do
+      before do
+        ball.position = { x: 118, y: 200 }
+      end
+      it "changes ball's x velocity to -3" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(-3)
+      end
+    end
+
+    context 'when ball collides at between 25% and 36% of paddle width ' do
+      before do
+        ball.position = { x: 128, y: 200 }
+      end
+      it "changes ball's x velocity to -2" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(-2)
+      end
+    end
+
+    context 'when ball collides at between 37% and 48% of paddle width' do
+      before do
+        ball.position = { x: 136, y: 200 }
+      end
+      it "changes ball's x velocity to -1" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(-1)
+      end
+    end
+
+    context 'when ball collides at 49% and 60% of paddle width' do
+      before do
+        ball.position = { x: 148, y: 200 }
+      end
+      it "changes ball's x velocity to 1" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(1)
+      end
+    end
+
+    context 'when ball collides at 61% and 72% of paddle width' do
+      before do
+        ball.position = { x: 155, y: 200 }
+      end
+      it "changes ball's x velocity to 2" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(2)
+      end
+    end
+
+    context 'when ball collides at 73% and 84% of paddle width' do
+      before do
+        ball.position = { x: 163, y: 200 }
+      end
+      it "changes ball's x velocity to 3" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(3)
+      end
+    end
+
+    context 'when ball collides at 85 and 100 width of paddle' do
+      before do
+        ball.position = { x: 172, y: 200 }
+      end
+      it "changes ball's x velocity to 4" do
+        expect(ball.change_velocity_x(paddle.position, paddle.width)).to eq(4)
       end
     end
   end

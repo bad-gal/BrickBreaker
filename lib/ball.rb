@@ -101,4 +101,28 @@ class Ball
     @image = Image.create(file: ball_image[:file])
     @size = ball_image[:size]
   end
+
+  def change_velocity_x(pos, width)
+    position_on_paddle = @position[:x] - pos[:x]
+    percentage = ((position_on_paddle.to_f /  width.to_f) * 100).round
+
+    case percentage
+    when 0..14
+      @velocity[:x] = -4
+    when 15..24
+      @velocity[:x] = -3
+    when 25..36
+      @velocity[:x] = -2
+    when 37..48
+      @velocity[:x] = -1
+    when 49..60
+      @velocity[:x] = 1
+    when 61..72
+      @velocity[:x] = 2
+    when 73..84
+      @velocity[:x] = 3
+    when 85..100
+      @velocity[:x] = 4
+    end
+  end
 end
