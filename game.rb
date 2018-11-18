@@ -1,5 +1,5 @@
 require 'gosu'
-require_relative 'lib/e'
+require_relative 'lib/state'
 require_relative 'lib/settings'
 require_relative 'lib/level_manager'
 require_relative 'lib/image'
@@ -8,7 +8,6 @@ require_relative 'lib/ball'
 require_relative 'lib/capsule'
 require_relative 'lib/brick'
 require_relative 'lib/bullet'
-require 'byebug'
 
 class Game < Gosu::Window
   FAST_BALL = 6
@@ -23,24 +22,7 @@ class Game < Gosu::Window
     font_values
   end
 
-  def background_settings
-    @bkgnd_colour = Gosu::Color::WHITE
-    @bkgnd_timer = 0
-  end
-
-  def initial_game_values
-    @level = 1
-    @score = 0
-    @lives = 3
-    @game_state = State::BALL_IN_PADDLE
-    @bullets = []
-    reset_bullets
-  end
-
-  def font_values
-    @font = Gosu::Font.new(25)
-    @large_font = Gosu::Font.new(120)
-  end
+  private
 
   def update
     unless @game_state == State::WON
@@ -55,6 +37,42 @@ class Game < Gosu::Window
     @game_state = State::GAME_OVER if @lives.zero? && !won?
   end
 
+  def draw
+    static_draw
+    draw_game_objects
+    draw_score_board
+    draw_info
+    end
+
+  def initial_game_values
+    @level = 1
+    @score = 0
+    @lives = 3
+    @game_state = State::BALL_IN_PADDLE
+    @bullets = []
+    reset_bullets
+  end
+
+  def load_graphics
+    @background = Gosu::Image.new('assets/background.png')
+    @border = Gosu::Image.new('assets/border.png')
+    background_settings
+    load_paddle
+    load_balls
+    level = 'level_' + @level.to_s
+    @bricks = LevelManager.method(level).call
+  end
+
+  def font_values
+    @font = Gosu::Font.new(25)
+    @large_font = Gosu::Font.new(120)
+  end
+
+  def background_settings
+    @bkgnd_colour = Gosu::Color::WHITE
+    @bkgnd_timer = 0
+  end
+
   def flash_screen
     return unless @bkgnd_timer.positive?
 
@@ -62,7 +80,6 @@ class Game < Gosu::Window
   end
 
   def change_background_colour
-    #  do something like 250 * i (i is from 1..8)
     if (@bkgnd_timer + 250) > Gosu.milliseconds
       @bkgnd_colour = Gosu::Color::GREEN
     elsif (@bkgnd_timer + 500) > Gosu.milliseconds
@@ -81,13 +98,6 @@ class Game < Gosu::Window
       @bkgnd_colour = Gosu::Color::WHITE
       @bkgnd_timer = 0
     end
-  end
-
-  def draw
-    static_draw
-    draw_game_objects
-    draw_score_board
-    draw_info
   end
 
   def static_draw
@@ -265,9 +275,6 @@ class Game < Gosu::Window
         @bullets << Bullet.new(position: { x: @paddle.position[:x] + @paddle.width - 5, y: @paddle.position[:y] })
         @bullets.each(&:fire)
         @bullet_count += 1
-        # if @bullet_count >= 3
-        #   @paddle.gun = false
-        # end
       end
     end
 
@@ -309,15 +316,7 @@ class Game < Gosu::Window
     end
   end
 
-  def load_graphics
-    @background = Gosu::Image.new('assets/background.png')
-    @border = Gosu::Image.new('assets/border.png')
-    background_settings
-    load_paddle
-    load_balls
-    level = 'level_' + @level.to_s
-    @bricks = LevelManager.method(level).call
-  end
+
 
   def load_paddle
     @paddle = Paddle.new
