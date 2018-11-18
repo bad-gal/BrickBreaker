@@ -22,3 +22,29 @@ The paddle moves left and right using the arrow keys.
 Clone the repository
  - In the console / terminal
  - Locate the directory of the cloned repository, type 'ruby game.rb' to start the game
+ 
+***Screenshots***
+
+- Level 1
+
+![Level One](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_1.png)
+
+- Level 2
+
+![Level Two](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_2.png)
+
+- Level 3
+
+![Level Three](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_3.png)
+
+- Level 4
+
+![Level Four](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_4.png)
+
+- Level 5
+
+![Level Five](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_5.png)
+
+- Level 6
+
+![Level Six](https://github.com/bad-gal/BrickBreaker/blob/master/screenshots/level_6.png)
