@@ -1,52 +1,289 @@
 require 'gosu'
+require_relative 'lib/e'
 require_relative 'lib/settings'
+require_relative 'lib/level_manager'
 require_relative 'lib/image'
-require_relative 'lib/brick'
 require_relative 'lib/paddle'
 require_relative 'lib/ball'
 require_relative 'lib/capsule'
+require_relative 'lib/brick'
+require_relative 'lib/bullet'
+require 'byebug'
 
 class Game < Gosu::Window
-  MEDIUM_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::REGULAR_BALL_AREA / 2)
-  MEDIUM_BALL_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT - Ball::REGULAR_BALL_AREA
-  SMALL_BALL_X_START = (Settings::GAME_WIDTH / 2) - (Ball::SMALL_BALL_AREA / 2)
-  SMALL_BALL_Y_START = Settings::GAME_HEIGHT - Settings::PADDLE_HEIGHT - Ball::SMALL_BALL_AREA
+  FAST_BALL = 6
+  SLOW_BALL = 2
+  MAX_BULLETS = 10
 
   def initialize
     super(Settings::SCREEN_WIDTH, Settings::GAME_HEIGHT)
-    self.caption = 'Brick Breaker'
+    self.caption = 'Breakout'
+    initial_game_values
     load_graphics
-    @game_state = :ball_in_paddle
+    font_values
+  end
+
+  def background_settings
+    @bkgnd_colour = Gosu::Color::WHITE
+    @bkgnd_timer = 0
+  end
+
+  def initial_game_values
+    @level = 1
     @score = 0
     @lives = 3
+    @game_state = State::BALL_IN_PADDLE
+    @bullets = []
+    reset_bullets
+  end
+
+  def font_values
     @font = Gosu::Font.new(25)
     @large_font = Gosu::Font.new(120)
-    @flip = false
   end
 
   def update
-    button_pressed
-    ball_movements
-    collisions
-    @game_state = :won if won?
-    @game_state = :game_over if @lives.zero? && !won?
+    unless @game_state == State::WON
+      button_pressed
+      ball_movements
+      collisions
+      update_bullets
+      update_bricks
+      flash_screen
+    end
+    @game_state = State::WON if won?
+    @game_state = State::GAME_OVER if @lives.zero? && !won?
+  end
+
+  def flash_screen
+    return unless @bkgnd_timer.positive?
+
+    change_background_colour
+  end
+
+  def change_background_colour
+    #  do something like 250 * i (i is from 1..8)
+    if (@bkgnd_timer + 250) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::GREEN
+    elsif (@bkgnd_timer + 500) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::WHITE
+    elsif (@bkgnd_timer + 750) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::GREEN
+    elsif (@bkgnd_timer + 100) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::WHITE
+    elsif (@bkgnd_timer + 1250) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::GREEN
+    elsif (@bkgnd_timer + 1500) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::WHITE
+    elsif (@bkgnd_timer + 1750) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::GREEN
+    elsif (@bkgnd_timer + 2000) > Gosu.milliseconds
+      @bkgnd_colour = Gosu::Color::WHITE
+      @bkgnd_timer = 0
+    end
   end
 
   def draw
-    @background.draw(0, 0, 0)
-    @border.draw(640, 0, 0)
-    @bricks.each do |brick|
-      brick.capsule.image.draw(brick.capsule.position.first, brick.capsule.position.last, 0)
-      brick.image.draw(brick.position.first, brick.position.last, 0)
-    end
-    @paddle.image.draw(@paddle.position.first, @paddle.position.last, 0)
-    @balls.each { |ball| ball.image.draw(ball.position.first, ball.position.last, 0) }
+    static_draw
+    draw_game_objects
     draw_score_board
+    draw_info
+  end
 
-    if @game_state == :game_over
+  def static_draw
+    @background.draw(0, 0, 0, 1, 1, color = @bkgnd_colour)
+    @border.draw(640, 0, 0, 1, 1, color = Gosu::Color::WHITE, mode = :additive)
+  end
+
+  def draw_game_objects
+    @bricks.each do |brick|
+      brick.capsule.draw
+      brick.draw
+    end
+    @paddle.draw
+    @balls.each(&:draw)
+    @bullets.each(&:draw) unless @bullets.empty?
+  end
+
+  def ball_movements
+    @balls.each(&:move)
+    @balls.each(&:boundary_bounce)
+    ball_lost
+  end
+
+  def ball_lost
+    if @balls.size == 1
+      manage_lost_ball
+    else
+      @balls.each do |ball|
+        @balls.delete ball if ball.lost?
+      end
+    end
+  end
+
+  def manage_lost_ball
+    return unless @balls.first.lost?
+
+    @lives -= 1 if @lives.positive?
+    return if @lives.zero?
+
+    @game_state = State::BALL_IN_PADDLE
+    @paddle.reset
+    reset_bullets
+    reset_only_ball
+  end
+
+  def reset_only_ball
+    @balls.first.reset(pos_x: @paddle.position[:x] + (@paddle.width / 2) - 8, pos_y: @paddle.position[:y] - @paddle.height)
+  end
+
+  def collisions
+    paddle_collisions
+    brick_collision
+    bullet_collision
+  end
+
+  def paddle_collisions
+    @balls.each do |ball|
+      next unless ball.collides_with?(@paddle.position, @paddle.width, @paddle.height)
+
+      ball.reposition_to(@paddle.position[:y], @paddle.height)
+      ball.change_velocity_x(@paddle.position, @paddle.width)
+      ball.bounce_off
+    end
+  end
+
+  def brick_collision
+    @bricks.each do |brick|
+      handle_ball(brick)
+    end
+  end
+
+  def handle_ball(brick)
+    @balls.each do |ball|
+      next unless ball.collides_with?(brick.position, Brick::BRICK_WIDTH, Brick::BRICK_HEIGHT)
+
+      act_on_ball_collision(ball, brick)
+    end
+  end
+
+  def act_on_ball_collision(ball, brick)
+    ball.velocity[:y] = -ball.velocity[:y]
+    change_ball_velocity(ball, brick)
+    brick.damage
+    cull(brick) if brick.hits.zero?
+  end
+
+  def change_ball_velocity(ball, brick)
+    return unless ball.collides_with?(brick.position, Brick::BRICK_WIDTH, Brick::BRICK_HEIGHT)
+
+    ball.velocity[:x] = -ball.velocity[:x]
+    ball.velocity[:y] = -ball.velocity[:y]
+  end
+
+  def bullet_collision
+    return if @bullets.empty?
+
+    @bullets.each do |bullet|
+      @bricks.each do |brick|
+        next unless bullet.collides_with?(brick.position, Brick::BRICK_WIDTH, Brick::BRICK_HEIGHT)
+
+        @bullets.delete(bullet)
+        cull(brick)
+      end
+    end
+  end
+
+  def update_bullets
+    return if @bullets.empty?
+
+    @bullets.each do |bullet|
+      bullet.move
+      next unless bullet.position[:y].negative?
+
+      if @bullet_count >= 3 && !@paddle.gun
+        reset_bullets
+      else
+        @bullets.delete(bullet)
+      end
+    end
+  end
+
+  def update_bricks
+    @bricks.each do |brick|
+      next unless brick.capsule.visible
+
+      if @paddle.collides_with?(brick.capsule.position, Capsule::CAPSULE_WIDTH, Capsule::CAPSULE_HEIGHT)
+        @bkgnd_timer = Gosu.milliseconds
+        brick.capsule.visible = false
+        collect_gift(brick.capsule.type)
+        @bricks.delete brick
+      elsif brick.capsule.position[:y] > Settings::GAME_HEIGHT
+        @bricks.delete brick
+      end
+
+      brick.capsule.move
+    end
+  end
+
+  def cull(brick)
+    @score += brick.value
+    brick.destroy
+    @bricks.delete(brick) if brick.capsule.type == :empty
+  end
+
+  def draw_score_board
+    @font.draw('Level: ' + @level.to_s, 665, 20, 0, 1, 1, Gosu::Color::YELLOW)
+    @font.draw('Lives: ' + @lives.to_s, 665, 80, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw('Bricks: ' + @bricks.size.to_s, 665, 120, 0, 1, 1, Gosu::Color::WHITE)
+    @font.draw('Score: ' + @score.to_s, 665, 160, 0, 1, 1, Gosu::Color::WHITE)
+  end
+
+  def draw_info
+    if @game_state == State::GAME_OVER
       @large_font.draw('Game Over', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
-    elsif @game_state == :won
-      @large_font.draw('You won', 50, 160, 0, 1, 1, Gosu::Color::WHITE)
+      @font.draw("Press 'Y' to start again or 'ESC' to quit", 110, 280, 0, 1, 1, Gosu::Color::WHITE)
+    elsif @game_state == State::WON
+      @large_font.draw('You won', 70, 160, 0, 1, 1, Gosu::Color::WHITE)
+      @font.draw("Press 'Y' to play next level or 'ESC' to quit", 80, 280, 0, 1, 1, Gosu::Color::WHITE)
+    end
+  end
+
+  def button_up(id)
+    if id == Gosu::KB_SPACE
+      if @game_state == State::BALL_IN_PADDLE
+        @game_state = State::PLAYING
+        @paddle_state = State::PLAYING
+        @balls.each do |ball|
+          ball.state = State::PLAYING
+          ball.lift_off
+        end
+      end
+
+      if @game_state == State::PLAYING && @paddle.gun && @bullets.empty?
+        @bullets << Bullet.new(position: { x: @paddle.position[:x], y: @paddle.position[:y] })
+        @bullets << Bullet.new(position: { x: @paddle.position[:x] + @paddle.width - 5, y: @paddle.position[:y] })
+        @bullets.each(&:fire)
+        @bullet_count += 1
+        # if @bullet_count >= 3
+        #   @paddle.gun = false
+        # end
+      end
+    end
+
+    if id == Gosu::KB_Y
+      if @game_state == State::GAME_OVER
+        restart_game
+      elsif @game_state == State::WON
+        reset_bullets
+        background_settings
+        @level += 1
+        @game_state = State::BALL_IN_PADDLE
+        load_paddle
+        load_balls
+        level = 'level_' + @level.to_s
+        @bricks = LevelManager.method(level).call
+      end
     end
   end
 
@@ -58,198 +295,63 @@ class Game < Gosu::Window
     end
   end
 
-  private
+  def button_pressed
+    if Gosu.button_down?(Gosu::KB_LEFT)
+      @paddle.move_left
+      @balls.each do |ball|
+        ball.move_left(centre_x: (@paddle.width - ball.size) / 2)
+      end
+    elsif Gosu.button_down?(Gosu::KB_RIGHT)
+      @paddle.move_right
+      @balls.each do |ball|
+        ball.move_right(width: @paddle.width, centre_x: (@paddle.width - ball.size) / 2)
+      end
+    end
+  end
 
   def load_graphics
     @background = Gosu::Image.new('assets/background.png')
     @border = Gosu::Image.new('assets/border.png')
-    load_bricks
+    background_settings
     load_paddle
     load_balls
-  end
-
-  def load_bricks
-    @bricks = []
-
-    blue_bricks = { size: 8, file: 'assets/brick_blue.png', value: 60 }
-    pink_bricks = { size: 16, file: 'assets/brick_pink.png', value: 50 }
-    green_bricks = { size: 16, file: 'assets/brick_green.png', value: 40 }
-    orange_bricks = { size: 16, file: 'assets/brick_orange.png', value: 30 }
-    purple_bricks = { size: 16, file: 'assets/brick_purple.png', value: 20 }
-    red_bricks = { size: 16, file: 'assets/brick_red.png', value: 10 }
-
-    variants = [blue_bricks, pink_bricks, green_bricks, orange_bricks, purple_bricks, red_bricks]
-    variants.each do |var|
-      size = var[:size]
-      1.upto(size) do
-        @bricks << Brick.new(file: var[:file], value: var[:value], position: [0, 0])
-      end
-    end
-
-    position_bricks(x: 0, y: -Settings::BRICK_HEIGHT)
-    attach_capsules
+    level = 'level_' + @level.to_s
+    @bricks = LevelManager.method(level).call
   end
 
   def load_paddle
-    @paddle = Paddle.new(details: Paddle::REGULAR_PADDLE)
-    position_paddle
+    @paddle = Paddle.new
   end
 
   def load_balls
     @balls = []
-    @balls << Ball.new(file: 'assets/ball_regular.png', position: [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START])
-  end
-
-  def position_bricks(x:, y:)
-    @bricks.each_with_index do |brick, i|
-      if (i % Settings::BRICKS_PER_ROW).zero?
-        x = 0
-        y += Settings::BRICK_HEIGHT
-      else
-        x += Settings::BRICK_WIDTH
-      end
-      brick.position = [x, y]
-      brick.capsule.position = [x, y]
-    end
-  end
-
-  def attach_capsules
-    sample = @bricks.sample(11)
-
-    sample.each_with_index do |brick, i|
-      x_diff = (Settings::BRICK_WIDTH - brick.capsule.width) / 2
-      brick.capsule = Capsule.new(type: Capsule::CAPSULES[i],
-                                  position: [brick.position[0] + x_diff, brick.position[1]])
-    end
-  end
-
-  def draw_score_board
-    @font.draw("Score", 675, 40, 0, 1, 1, Gosu::Color::WHITE)
-    @font.draw(@score, 700, 80, 0, 1, 1, Gosu::Color::WHITE)
-    @font.draw("Lives", 675, 160, 0, 1, 1, Gosu::Color::WHITE)
-    @font.draw(@lives, 700, 200, 0, 1, 1, Gosu::Color::WHITE)
-  end
-
-  def ball_movements
-    @balls.each(&:move) if @game_state == :playing
-    @balls.each(&:boundary_bounce) if @game_state == :playing
-    ball_lost
-  end
-
-  def ball_lost
-    if @balls.size == 1
-      if @balls.first.lost?
-        @lives -= 1 if @lives.positive?
-        return if @lives.zero?
-
-        @game_state = :ball_in_paddle
-        reset_paddle
-        position_paddle
-        reset_ball
-      end
-    else
-      @balls.each do |ball|
-        @balls.delete ball if ball.lost?
-      end
-    end
-  end
-
-  def position_paddle
-    x = (Settings::GAME_WIDTH / 2) - (@paddle.width / 2)
-    y = Settings::GAME_HEIGHT - @paddle.height
-    @paddle.position = [x, y]
-  end
-
-  def reset_ball
-    if @balls.first.area == 16
-      @balls.first.position = [MEDIUM_BALL_X_START, MEDIUM_BALL_Y_START]
-    elsif @balls.first.area == 8
-      @balls.first.position = [SMALL_BALL_X_START, SMALL_BALL_Y_START]
-    end
-
-    @balls.first.wrap = false
-    @flip = false
-  end
-
-  def reset_paddle
-    @paddle.change(details: Paddle::REGULAR_PADDLE)
-    @paddle.wrap = false
-  end
-
-  def collisions
-    brick_collision
-    paddle_collision if @game_state != :ball_in_paddle
-    capsule_collision
-  end
-
-  def brick_collision
-    @bricks.each do |brick|
-      @balls.each do |ball|
-        next unless ball.collides_with?(brick.position, Settings::BRICK_WIDTH, Settings::BRICK_HEIGHT)
-
-        ball.bounce_off
-        cull_brick(brick)
-      end
-    end
-  end
-
-  def cull_brick(brick)
-    @score += brick.value
-    brick.destroy
-    @bricks.delete(brick) if brick.capsule.type == :empty
-  end
-
-  def paddle_collision
-    @balls.each do |ball|
-      next unless ball.collides_with?(@paddle.position, @paddle.width, @paddle.height)
-
-      ball.reposition_to(@paddle.position[1], @paddle.height)
-      ball.bounce_off
-    end
-  end
-
-  def capsule_collision
-    @bricks.each do |brick|
-      next unless brick.capsule.visible
-
-      brick.capsule.fall
-      if brick.capsule.collides_with?(@paddle.position, @paddle.width, @paddle.height)
-        brick.capsule.visible = false
-        collect_gift(brick.capsule.type)
-        @bricks.delete brick
-      elsif brick.capsule.position[1] > Settings::GAME_HEIGHT
-        @bricks.delete brick
-      end
-    end
+    @balls << Ball.new(x: @paddle.position[:x] + (@paddle.width / 2) - 8,
+                       y: @paddle.position[:y] - @paddle.height)
   end
 
   def won?
     @bricks.size.zero?
   end
 
-  def button_pressed
-    if Gosu.button_down?(Gosu::KB_LEFT)
-      if @flip
-        @paddle.move_right
-        @balls.each(&:move_right) if @game_state == :ball_in_paddle
-      else
-        @paddle.move_left
-        @balls.each(&:move_left) if @game_state == :ball_in_paddle
-      end
-    elsif Gosu.button_down?(Gosu::KB_RIGHT)
-      if @flip
-        @paddle.move_left
-        @balls.each(&:move_left) if @game_state == :ball_in_paddle
-      else
-        @paddle.move_right
-        @balls.each(&:move_right) if @game_state == :ball_in_paddle
-      end
-    elsif Gosu.button_down?(Gosu::KB_SPACE)
-      if @game_state == :ball_in_paddle
-        @balls.each(&:lift_off)
-        @game_state = :playing
+  def restart_game
+    initial_game_values
+    load_paddle
+    load_balls
+    reset_bullets
+    @paddle.gun = false
+    background_settings
+    level = 'level_' + @level.to_s
+    @bricks = LevelManager.method(level).call
+  end
+
+  def reset_bullets
+    unless @bullets.empty?
+      @bullets.each do |bullet|
+        bullet.position[:y] = -100
       end
     end
+    @bullets.clear
+    @bullet_count = 0
   end
 
   def collect_gift(type)
@@ -270,12 +372,12 @@ class Game < Gosu::Window
 
   def small_paddle
     @score += 75
-    @paddle.change(details: Paddle::SMALL_PADDLE)
+    @paddle.reduce
   end
 
   def large_paddle
     @score += 75
-    @paddle.change(details: Paddle::LONG_PADDLE)
+    @paddle.enlarge
   end
 
   def extra_life
@@ -286,33 +388,32 @@ class Game < Gosu::Window
   def slow_ball
     @score += 75
     @balls.each do |ball|
-      ball.velocity[0].positive? ? ball.velocity[0] -= 2 : ball.velocity[0] += 2
-      ball.velocity[0].positive? ? ball.velocity[1] -= 2 : ball.velocity[1] += 2
+      ball.velocity[:x].positive? ? ball.velocity[:x] = SLOW_BALL : ball.velocity[:x] = -SLOW_BALL
+      ball.velocity[:y].positive? ? ball.velocity[:y] = SLOW_BALL : ball.velocity[:y] = -SLOW_BALL
     end
   end
 
   def fast_ball
     @score += 75
     @balls.each do |ball|
-      ball.velocity[0].positive? ? ball.velocity[0] += 3 : ball.velocity[0] -= 3
-      ball.velocity[0].positive? ? ball.velocity[1] += 3 : ball.velocity[1] -= 3
+      ball.velocity[:x].positive? ? ball.velocity[:x] = FAST_BALL : ball.velocity[:x] = -FAST_BALL
+      ball.velocity[:y].positive? ? ball.velocity[:y] = FAST_BALL : ball.velocity[:y] = -FAST_BALL
     end
   end
 
   def multi
     @score += 75
-
     velocity = @balls.first.velocity
     position = @balls.first.position
     speed = @balls.first.speed
 
-    new_ball(position, [velocity[0], -velocity[1]], speed)
-    new_ball(position, [-velocity[0], velocity[1]], speed)
-    new_ball(position, [-velocity[0], -velocity[1]], speed)
+    new_ball(position, [velocity[:x], -velocity[:y]], speed)
+    new_ball(position, [-velocity[:x], velocity[:y]], speed)
+    new_ball(position, [-velocity[:x], -velocity[:y]], speed)
   end
 
   def new_ball(position, velocity, speed)
-    ball = Ball.new(file: 'assets/ball_regular.png', position: [position[0], position[1]])
+    ball = Ball.new(position: [position[:x], position[:y]])
     ball.velocity = velocity
     ball.speed = speed
     @balls << ball
@@ -320,15 +421,17 @@ class Game < Gosu::Window
 
   def wrap
     @score += 75
-    @paddle.wrap = true
-    @balls.each do |ball|
-      ball.wrap = true
-    end
+    @paddle.action = Paddle::WRAP_ACTION
   end
 
   def flip
     @score += 75
-    @flip = true
+    @paddle.action = Paddle::FLIP_ACTION
+  end
+
+  def gun
+    @score += 75
+    @paddle.gun = true
   end
 end
 
