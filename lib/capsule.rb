@@ -1,4 +1,3 @@
-require 'byebug'
 class Capsule
   include Image
   attr_accessor :position, :velocity, :visible, :type, :image

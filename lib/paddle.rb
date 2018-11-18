@@ -1,10 +1,10 @@
-require_relative 'state'
+krequire_relative 'state'
 require_relative 'settings'
 
 class Paddle
   include Image
-  attr_accessor :width, :height, :position, :state
-  attr_reader :image, :action, :gun
+  attr_accessor :width, :height, :position, :state, :gun
+  attr_reader :image, :action
 
   SMALL_PADDLE = { file: 'assets/paddle_small.png', width: 61 }.freeze
   REGULAR_PADDLE = { file: 'assets/paddle_simple.png', width: 80 }.freeze
