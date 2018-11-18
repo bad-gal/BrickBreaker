@@ -1,10 +1,10 @@
-krequire_relative 'state'
+require_relative 'state'
 require_relative 'settings'
 
 class Paddle
   include Image
-  attr_accessor :width, :height, :position, :state, :gun
-  attr_reader :image, :action
+  attr_accessor :width, :height, :position, :state, :gun, :action
+  attr_reader :image
 
   SMALL_PADDLE = { file: 'assets/paddle_small.png', width: 61 }.freeze
   REGULAR_PADDLE = { file: 'assets/paddle_simple.png', width: 80 }.freeze
@@ -90,6 +90,6 @@ class Paddle
 
   def collides_with?(pos, width, height)
     Settings.overlapping?(pos[:x], pos[:x] + width, @position[:x], @position[:x] + @width) &&
-        Settings.overlapping?(pos[:y], pos[:y] + height, @position[:y], @position[:y] + @height)
+      Settings.overlapping?(pos[:y], pos[:y] + height, @position[:y], @position[:y] + @height)
   end
 end

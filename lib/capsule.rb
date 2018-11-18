@@ -8,7 +8,7 @@ class Capsule
 
   CAPSULES = %i[extra_life small_paddle large_paddle fast_ball slow_ball
                 score_250 score_100 score_500 multi wrap flip
-                laser gun bomb empty].freeze
+                gun empty].freeze
 
   def initialize(type:, x:, y:)
     @image = Image.create(file: acquire_filename(type))
