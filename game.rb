@@ -406,15 +406,16 @@ class Game < Gosu::Window
     position = @balls.first.position
     speed = @balls.first.speed
 
-    new_ball(position, [velocity[:x], -velocity[:y]], speed)
-    new_ball(position, [-velocity[:x], velocity[:y]], speed)
-    new_ball(position, [-velocity[:x], -velocity[:y]], speed)
+    new_ball(position, { x: velocity[:x], y: -velocity[:y] }, speed)
+    new_ball(position, { x: -velocity[:x], y: velocity[:y] }, speed)
+    new_ball(position, { x: -velocity[:x], y: -velocity[:y] }, speed)
   end
 
   def new_ball(position, velocity, speed)
-    ball = Ball.new(position: [position[:x], position[:y]])
+    ball = Ball.new(x: position[:x], y: position[:y])
     ball.velocity = velocity
     ball.speed = speed
+    ball.state = State::PLAYING
     @balls << ball
   end
 
